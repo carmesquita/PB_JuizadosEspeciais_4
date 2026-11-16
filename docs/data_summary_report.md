@@ -1,24 +1,44 @@
-# Data Summary Report - TP3 Juizados Especiais
+# Data Summary Report — TP4 Juizados Especiais
 
-**Autora:** Carolina Gabriela Mesquita
+**Autora:** Carolina Gabriela Mesquita.
 
-| Fonte | Tipo de dado | Objetivo de uso | Resumo e problemas encontrados |
+## Dados utilizados
+
+| Fonte | Tipo | Objetivo | Resumo e limitações |
 |---|---|---|---|
-| Justiça em Números/CNJ | Estruturado - CSV | comparar o tempo médio até a sentença | 27 tribunais, ano de 2025, sem valores ausentes no arquivo processado. O dado é uma média por tribunal e não representa processos individuais |
-| Notícias dos Juizados Especiais/CNJ | Não estruturado - HTML | apresentar informações de contexto e preparar uma base textual | dez notícias coletadas por requisições HTTP e Beautiful Soup. O Selenium não é necessário para a fonte atual. A estrutura da página pode mudar e exigir ajustes |
-| CSV enviado pelo usuário | Estruturado - CSV | acrescentar observações sem alterar a base oficial | deve possuir as colunas `tribunal`, `observacao` e `fonte` |
-| Dados complementares enviados pela API | Estruturado - JSON | receber novas observações sem alterar a base oficial | envio por rota POST com os campos `tribunal`, `observacao` e `fonte` |
+| Justiça em Números/CNJ | CSV estruturado | comparar o tempo médio até a sentença | 27 tribunais, ano de 2025, sem valores ausentes no arquivo processado. O indicador é agregado por tribunal |
+| Notícias dos Juizados Especiais/CNJ | HTML | apresentar informações de contexto | dez notícias coletadas por requisições HTTP e Beautiful Soup. São utilizados metadados e trechos, não o conteúdo integral dos artigos |
+| CSV enviado pelo usuário | CSV estruturado | acrescentar informações complementares | deve conter `tribunal`, `observacao` e `fonte` |
+| Observações enviadas pela API | JSON, armazenado em CSV | registrar informações sem alterar a base oficial | registros com tribunal, observação, fonte e identificador, salvos em `data/observacoes.csv` |
 
-## Campos utilizados
+## Arquivos e integração
 
-O arquivo `tempo_sentenca_juizados.csv` contém ano, tribunal, nome do tribunal, UF, tempo médio da sentença e quantidade de sentenças de conhecimento.
+`tempo_sentenca_juizados.csv` contém ano, tribunal, nome do tribunal, UF, tempo médio até a sentença e quantidade de sentenças de conhecimento.
 
-O arquivo `noticias_juizados.csv` contém título, data, resumo, URL e fonte da notícia.
+A API lê essa base e disponibiliza os dados pelo GET `/tribunais`. O Streamlit utiliza o retorno para alimentar suas tabelas e gráficos.
 
-O arquivo `noticias_para_llm.csv` contém identificador, título, resumo, texto preparado, data, URL e fonte. O campo texto reúne o título e o resumo para permitir uso futuro em tarefas com LLMs.
+As notícias permanecem em `noticias_juizados.csv`. O arquivo `noticias_para_llm.csv`, preparado no TP3, foi mantido como parte do trabalho anterior. A tarefa de LLM escolhida para o TP4 utiliza os dados das comparações entre tribunais.
 
-Os dados estatísticos e as notícias são coletados em notebooks separados e salvos em `data/processed` para uso no aplicativo.
+## Processamento com LLM
+
+O TinyLlama recebe um texto com ano, tribunais, tempos médios e diferença. A saída é uma explicação textual em português.
+
+O POST `/processar_texto` devolve os campos:
+
+- `texto`: entrada recebida;
+- `tipo_analise`: comparação;
+- `resultado`: texto produzido pelo modelo.
+
+Os testes com TJDFT/TJSE e TJBA/TJMA preservaram os valores e a indicação de menor e maior tempo. A amostra é pequena e a conferência dos resultados continua necessária.
+
+Entradas inválidas são recusadas com 422. A indisponibilidade do modelo é informada com 503, mantendo as demais rotas disponíveis.
+
+## Atendimento ao feedback do TP3
+
+O GET passou a alimentar o painel, as observações passaram a ser persistidas em CSV e a tarefa efetiva do LLM foi registrada neste relatório e no Project Charter.
 
 ## Decisão sobre a coleta
 
-Não foi adicionada uma nova fonte dinâmica nesta etapa. As fontes atuais podem ser acessadas por arquivos estruturados, requisições HTTP e Beautiful Soup. O Selenium será utilizado somente se uma futura fonte exigir interação com elementos dinâmicos da página.
+As fontes atuais são acessadas por arquivos estruturados, requisições HTTP e Beautiful Soup. O Selenium permanece reservado para uma eventual fonte que exija interação dinâmica.
+
+As fontes e o apoio de IA estão declarados no README.

@@ -10,45 +10,33 @@ Os dados do CNJ permitem comparar o tempo médio até a sentença nos Juizados E
 
 ## Escopo
 
-O projeto apresenta dados de 2025 dos 27 Tribunais de Justiça estaduais, notícias sobre Juizados Especiais e um espaço para envio de informações complementares.
+A aplicação apresenta dados de 2025, consultas e comparações entre tribunais, notícias de contexto e informações complementares.
 
-No TP3, a aplicação será organizada em múltiplas páginas e contará com uma API em FastAPI, com rotas GET e POST documentadas.
+No TP4, o modelo TinyLlama foi integrado ao FastAPI para transformar os resultados de uma comparação em uma explicação textual em português.
 
-Os textos das notícias serão mantidos em formato estruturado para futuro uso com LLMs. O Selenium será adotado somente se uma nova fonte exigir interação dinâmica.
+A entrada informa ano, siglas, tempos e diferença. A tarefa do modelo é preservar esses dados ao produzir a explicação. O foco do LLM nesta etapa é a comparação dos Juizados Especiais.
 
-Não fazem parte do projeto a análise de processos individuais, a previsão de prazos ou a avaliação de magistrados e unidades judiciais.
+Ficam fora do escopo a análise de processos individuais, a previsão de prazos e a avaliação de magistrados.
 
+## Objetivos e critérios de sucesso
 
-## Objetivos
-
-- comparar o tempo médio até a sentença entre os tribunais;
-- permitir filtrar, ordenar e consultar os dados;
-- permitir upload e download de CSV;
-- apresentar notícias coletadas do portal do CNJ;
-- organizar a aplicação em múltiplas páginas;
-- disponibilizar dados por meio de uma API com rotas GET e POST;
-- preparar os textos das notícias para futuro uso com LLMs.
+- apresentar os dados dos 27 tribunais;
+- permitir consultas, filtros, tabelas, gráficos e download;
+- manter a aplicação organizada em quatro páginas;
+- obter os dados estatísticos pela API;
+- receber e persistir observações complementares em CSV;
+- executar o LLM localmente por meio do POST /processar_texto;
+- retornar JSON com texto, tipo de análise e resultado;
+- recusar entradas inválidas e informar a indisponibilidade do modelo.
 
 
 ## Público e ODS
 
 O público é formado pelo professor, alunos e pessoas interessadas em dados públicos da Justiça. O tema está relacionado à ODS 16, sobre acesso à Justiça e instituições eficazes.
 
-## Critérios de sucesso
-
-- apresentar os 27 tribunais;
-- mostrar média, menor e maior tempo;
-- disponibilizar gráfico, tabela, filtros, upload e download;
-- manter a comparação escolhida durante a sessão;
-- exibir as notícias coletadas com Beautiful Soup;
-- disponibilizar menu de navegação entre as páginas;
-- disponibilizar e documentar as rotas da API;
-- manter títulos e resumos das notícias em formato estruturado.
 
 ## Riscos
 
-- o portal do CNJ pode ficar indisponível;
-- a estrutura da página de notícias pode mudar;
-- o indicador agregado pode ser confundido com a duração de processos individuais.
+O modelo pode produzir informações incorretas, por isso a fidelidade dos valores e das siglas deve ser conferida. Os testes realizados são limitados a exemplos de comparação e não medem a precisão geral do modelo.
 
-Os CSVs processados ficam salvos no projeto e a limitação do indicador é informada no painel.
+A escolha do modelo está documentada em docs/escolha_modelo.docx. As fontes e o apoio de IA estão declarados no README.

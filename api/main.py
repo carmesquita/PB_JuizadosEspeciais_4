@@ -1,9 +1,10 @@
 from functools import lru_cache
 from pathlib import Path
-
 import pandas as pd
 from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from contextlib import asynccontextmanager
+from src.modelo_llm import carregar_modelo, gerar_comparacao
 
 
 PASTA_PROJETO = Path(__file__).resolve().parent.parent
@@ -29,12 +30,39 @@ class ObservacaoEntrada(BaseModel):
     observacao: str = Field(min_length=5, max_length=500)
     fonte: str = Field(min_length=2, max_length=200)
 
-
 class ObservacaoResposta(ObservacaoEntrada):
     id: int
 
+#classe alterada para tratamento dos erros
+class TextoEntrada(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    texto: str = Field(min_length=1)
+
+class ComparacaoResposta(BaseModel):
+    texto: str
+    tipo_analise: str
+    resultado: str
+
+class InicioResposta(BaseModel):
+    mensagem: str
+    documentacao: str
+
+MOTORES = {}
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    try:
+        MOTORES["comparacao"] = carregar_modelo()
+    except (OSError, ValueError) as falha:
+        MOTORES["comparacao"] = None
+        print(f"Modelo não carregado: {falha}")
+
+    yield
+    MOTORES.clear()
 
 app = FastAPI(
+    lifespan=lifespan,
     title="API dos Juizados Especiais",
     description=(
         "API para consulta dos dados dos Tribunais de Justiça e "
@@ -43,8 +71,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
-observacoes: list[ObservacaoResposta] = []
+#Correção do feedback no TP3 - recuperar as observações salvas em CSV.
+ARQUIVO_OBSERVACOES = PASTA_PROJETO / "data" / "observacoes.csv"
 
+observacoes = []
+
+if ARQUIVO_OBSERVACOES.exists():
+    observacoes = pd.read_csv(
+        ARQUIVO_OBSERVACOES,
+        dtype="string",
+    ).to_dict(orient="records")
 
 @lru_cache
 def carregar_tribunais() -> pd.DataFrame:
@@ -53,6 +89,7 @@ def carregar_tribunais() -> pd.DataFrame:
 
 @app.get(
     "/",
+    response_model=InicioResposta,
     tags=["Status"],
     summary="Apresentar informações da API",
 )
@@ -127,6 +164,26 @@ def criar_observacao(observacao: ObservacaoEntrada):
         observacao=texto,
         fonte=fonte,
     )
-
-    observacoes.append(registro)
+    #Correção
+    observacoes.append(registro.model_dump())
+    pd.DataFrame(observacoes).to_csv(ARQUIVO_OBSERVACOES, index=False)
     return registro
+
+
+@app.post("/processar_texto", response_model=ComparacaoResposta)
+def processar_texto(pedido: TextoEntrada):
+    if MOTORES["comparacao"] is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "O modelo de comparação está indisponível. "
+                "As consultas aos tribunais continuam disponíveis."
+            ),
+        )
+
+    # A geração usa a CPU, por isso a rota utiliza def.
+    return {
+        "texto": pedido.texto,
+        "tipo_analise": "comparacao",
+        "resultado": gerar_comparacao(MOTORES["comparacao"], pedido.texto),
+    }

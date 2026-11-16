@@ -1,27 +1,30 @@
 from pathlib import Path
-
+import requests
 import pandas as pd
 import streamlit as st
 
 
 PASTA_PROJETO = Path(__file__).resolve().parent
 CAMPOS_COMPLEMENTARES = ["tribunal", "observacao", "fonte"]
+URL_API = "http://127.0.0.1:8000"
 
-
+# Correção indicada pelo professor no feedback do TP3: 
 @st.cache_data
 def carregar_dados():
-    dados = pd.read_csv(
-        PASTA_PROJETO
-        / "data"
-        / "processed"
-        / "tempo_sentenca_juizados.csv"
-    )
+    try:
+        resposta = requests.get(f"{URL_API}/tribunais", timeout=10)
+        resposta.raise_for_status()
+    except requests.RequestException:
+        st.error(
+            "Não foi possível consultar a API. "
+            "Verifique se o FastAPI está em execução."
+        )
+        st.stop()
+
+    dados = pd.DataFrame(resposta.json())
 
     noticias = pd.read_csv(
-        PASTA_PROJETO
-        / "data"
-        / "processed"
-        / "noticias_juizados.csv"
+        PASTA_PROJETO / "data" / "processed" / "noticias_juizados.csv"
     )
 
     return dados, noticias

@@ -1,80 +1,88 @@
-# PB Juizados Especiais — TP3
+# PB Juizados Especiais — TP4
 
-Projeto acadêmico sobre o tempo médio até a sentença nos Juizados Especiais dos 27 Tribunais de Justiça estaduais.
+**Autora:** Carolina Gabriela Mesquita.
 
-O TP3 dá continuidade ao projeto anterior, mantendo os dados e funcionalidades existentes e acrescentando uma aplicação multipáginas, uma API com FastAPI e a preparação dos textos das notícias para uso futuro com LLMs.
+Projeto acadêmico para comparar o tempo médio até a sentença nos Juizados Especiais dos 27 Tribunais de Justiça, utilizando dados de 2025 do CNJ.
+O TP4 acrescenta um modelo de linguagem local ao backend FastAPI para produzir explicações textuais sobre comparações fornecidas na entrada.
 
 ## Funcionalidades
 
-- visão geral dos dados;
-- comparação e consulta entre tribunais;
-- gráfico, tabela, filtros e download de CSV;
-- apresentação de notícias coletadas do portal do CNJ;
-- envio de dados complementares por CSV;
-- envio de observações pela API;
-- rotas GET e POST documentadas pelo FastAPI;
-- arquivo textual preparado para uso futuro com LLMs.
+- painel Streamlit com quatro páginas;
+- consultas, filtros, tabelas, gráficos e download de CSV;
+- dados estatísticos obtidos pelo GET `/tribunais`;
+- notícias do CNJ como informações de contexto;
+- recebimento de observações pela API e armazenamento em `data/observacoes.csv`;
+- geração de explicações pelo POST `/processar_texto`;
+- respostas estruturadas com Pydantic e tratamento de erros.
 
-## Estrutura
+## Modelo escolhido
 
-- `app.py`: entrada e navegação do Streamlit;
-- `paginas/`: páginas da aplicação;
-- `api/`: API desenvolvida com FastAPI;
-- `data/`: arquivos brutos, processados e de exemplo;
-- `src/`: notebooks de coleta e preparação;
-- `docs/`: Project Charter e Data Summary Report.
+Foi utilizado `TinyLlama/TinyLlama-1.1B-Chat-v1.0`, executado na CPU, com `bfloat16`, `max_new_tokens=256` e `do_sample=False`.
 
-## Instalação
+Nos testes do notebook, duas comparações tiveram os valores e a direção da diferença preservados. Os tempos observados foram de 16,4 e 21,2 segundos. A memória calculada para os parâmetros foi de aproximadamente 2,2 GB; esse valor não representa a RAM total utilizada pela aplicação.
 
-Crie e ative um ambiente virtual:
+A justificativa completa está em `docs/escolha_modelo.docx`.
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
+## Instalação e execução
 
-Instale as dependências:
+Na pasta do projeto, instale as dependências:
 
 ```powershell
 python -m pip install -r requirements-api.txt
 ```
 
-## Execução
-
 Inicie a API em um terminal:
 
 ```powershell
-python -m uvicorn api.main:app --reload
+python -m uvicorn api.main:app
 ```
 
-A documentação ficará disponível em:
+Aguarde `Application startup complete`. Na primeira execução, é necessária conexão com a internet para baixar o modelo. Depois do download, o carregamento e a geração foram testados sem internet.
 
-```text
-http://127.0.0.1:8000/docs
-```
-
-Em outro terminal, inicie o Streamlit:
+Em outro terminal, inicie o aplicativo:
 
 ```powershell
 python -m streamlit run app.py
 ```
 
-A aplicação ficará disponível em:
+Endereços locais:
 
-```text
-http://localhost:8501
+- aplicativo: http://localhost:8501
+- documentação da API: http://127.0.0.1:8000/docs
+
+Os dois processos precisam permanecer em execução para o funcionamento integrado do painel.
+
+## Uso do LLM
+
+Em `/docs`, execute POST `/processar_texto` com:
+
+```json
+{
+  "texto": "Ano: 2025\nIndicador: tempo médio até a sentença nos Juizados Especiais\nTribunal com menor tempo: TJDFT\nTempo do TJDFT: 90,1 dias\nTribunal com maior tempo: TJSE\nTempo do TJSE: 111,7 dias\nDiferença: 21,6 dias"
+}
 ```
 
-A API deve permanecer em execução para que o formulário de envio de observações funcione. As observações recebidas são temporárias e não alteram a base oficial.
+A resposta contém `texto`, `tipo_analise` e `resultado`.
 
-## Fontes
+Entradas ausentes, de tipo incorreto, vazias ou contendo somente espaços são recusadas com 422. Se o modelo não estiver disponível, a rota retorna 503 com uma mensagem explicativa, enquanto as outras rotas continuam funcionando.
 
-- Conselho Nacional de Justiça — Justiça em Números;
-- portal de notícias dos Juizados Especiais;
+## Ajustes decorrentes do feedback do TP3
+
+- O GET passou a alimentar tabelas e gráficos.
+- As observações passaram a ser gravadas em CSV e recuperadas na inicialização.
+- A tarefa efetiva do LLM foi registrada no Project Charter e no Data Summary Report.
+- O endereço da API foi centralizado em `comum.py`.
+
+## Limitações
+
+A configuração atual é destinada à execução local. Um aplicativo publicado precisaria acessar uma API disponível em endereço alcançável pela hospedagem.
+
+A saída do LLM é consultada pela API, em `/docs`; ainda não há interface de geração no Streamlit. O modelo pode incluir os rótulos “Dados” e “Resposta”. Os dois casos avaliados não representam uma medida geral de precisão.
+
+O indicador é agregado por tribunal e não representa a duração de processos individuais.
+
+## Fontes e apoio
+
+- Conselho Nacional de Justiça — Justiça em Números e notícias dos Juizados Especiais.
 - Organização das Nações Unidas — ODS 16.
-
-## Autoria
-
-Carolina Gabriela Mesquita.
-
-Projeto desenvolvido para fins acadêmicos, com apoio de ferramentas de inteligência artificial na organização, revisão e desenvolvimento de partes do código.
+- ChatGPT — apoio na orientação de código e revisão da documentação. Apoio na correção gramatical e ajuste na fluidez dos textos. Apoio na complementação da documentação. A execução e a conferência dos resultados foram realizadas pela autora.

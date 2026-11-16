@@ -4,12 +4,10 @@ import streamlit as st
 
 from comum import (
     CAMPOS_COMPLEMENTARES,
+    URL_API,
     carregar_dados,
     iniciar_estado,
 )
-
-
-URL_API = "http://127.0.0.1:8000"
 
 dados, _ = carregar_dados()
 iniciar_estado()
